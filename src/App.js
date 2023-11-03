@@ -1,3 +1,4 @@
+/* eslint-disable no-useless-concat */
 import React, { useState, useRef } from "react";
 import Papa from "papaparse";
 import packageJson from "../package.json";
@@ -409,7 +410,7 @@ function App() {
             <br />
             <br />
             <Button
-              onClick={() =>{
+              onClick={() => {
                 window.open("https://github.com/bice4/csvViewer");
               }}
               rounded
