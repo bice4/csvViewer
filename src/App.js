@@ -406,6 +406,18 @@ function App() {
             Version: {packageJson.version}
             <br />
             Created by RB by DED 2023
+            <br />
+            <br />
+            <Button
+              onClick={() =>{
+                window.open("https://github.com/bice4/csvViewer");
+              }}
+              rounded
+              text
+              aria-label="Filter"
+              id="github-button"
+              icon="pi pi-github"
+            />
           </div>
         </div>
       </div>

@@ -25,7 +25,7 @@ Application supports two different ways:
    2) Reordable: change header order in table
 5) Paginator will appear if csv data records length >= 30
 6) Below the table view, exporter button will appear:
-   ![Alt text](image.png)
+   <img src="./imgs/image.png">
    1) None -> remove json/c# block
    2) Selected json -> show selected row as json
    3) All to json -> if csv data record less than 100 then show them in code block, else show save dialog window with all data records as json.

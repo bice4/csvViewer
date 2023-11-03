@@ -1,6 +1,10 @@
 {
   "name": "csv-viewer",
   "version": "0.2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bice4/csvViewer"
+  },
   "private": true,
   "dependencies": {
     "@testing-library/jest-dom": "^5.17.0",
