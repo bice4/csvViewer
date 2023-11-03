@@ -1,11 +1,17 @@
 {
   "name": "csv-viewer",
-  "version": "0.1.0",
+  "version": "0.2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bice4/csvViewer"
+  },
   "private": true,
   "dependencies": {
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
+    "html2pdf.js": "^0.10.1",
+    "jspdf": "^2.5.1",
     "papaparse": "^5.4.1",
     "primeflex": "^3.3.1",
     "primeicons": "^6.0.1",
@@ -14,7 +20,9 @@
     "react-code-blocks": "^0.1.4",
     "react-dom": "^18.2.0",
     "react-scripts": "5.0.1",
-    "web-vitals": "^2.1.4"
+    "save-file": "^2.3.1",
+    "web-vitals": "^2.1.4",
+    "xlsx": "^0.18.5"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -39,5 +47,8 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11"
   }
 }
