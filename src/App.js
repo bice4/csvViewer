@@ -5,7 +5,6 @@ import packageJson from "../package.json";
 import { DataTable } from "primereact/datatable";
 import { Column } from "primereact/column";
 import { Checkbox } from "primereact/checkbox";
-import { CopyBlock, dracula } from "react-code-blocks";
 import { InputTextarea } from "primereact/inputtextarea";
 import { ScrollTop } from "primereact/scrolltop";
 import { Divider } from "primereact/divider";
@@ -17,16 +16,24 @@ import { Toast } from "primereact/toast";
 import { Tooltip } from "primereact/tooltip";
 import { SpeedDial } from "primereact/speeddial";
 import { save } from "save-file";
+import ParsingErrorComponent from "./components/parsingErrorComponent";
+import JsonCodeBlockComponent from "./components/jsonCodeBlockComponent";
 
 function App() {
+  const paginationThreshold = 30;
+  const maxFileSize = 10000000;
+  const maxJsonRecords = 100;
+
   const [csvRaw, setCsvRaw] = useState("");
   const [csvData, setCsvData] = useState([]);
   const [file, setFile] = useState(null);
   let fileUploadRef = useRef(null);
   const toast = useRef(null);
 
-  const [csvParseError, setCsvParseError] = useState("");
-  const [isCsvError, setIsCsvError] = useState(false);
+  const [parsingError, setParsingError] = useState({
+    isError: false,
+    message: "",
+  });
 
   const [headerNameArray, setHeaderNameArray] = useState([]);
 
@@ -35,7 +42,6 @@ function App() {
 
   const [selectedObjs, setSelectedObjs] = useState([]);
 
-  const [isTableOptionsDisabled, setIsTableOptionsDisabled] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [jsonCodeBlockData, setJsonCodeBlockData] = useState({
     isCompiled: false,
@@ -66,19 +72,18 @@ function App() {
             life: 3000,
           });
           return;
-        } else {
-          setJsonCodeBlockData({
-            isCompiled: true,
-            data: JSON.stringify(selectedObjs, null, 2),
-          });
         }
+        setJsonCodeBlockData({
+          isCompiled: true,
+          data: JSON.stringify(selectedObjs, null, 2),
+        });
       },
     },
     {
       label: "All to json",
       icon: "pi pi-images",
       command: async () => {
-        if (csvData.length > 100) {
+        if (csvData.length > maxJsonRecords) {
           await save(JSON.stringify(csvData, null, 2), "csv.json");
           setJsonCodeBlockData({ isCompiled: false, data: "" });
         } else {
@@ -109,28 +114,28 @@ function App() {
   const process = async () => {
     if (csvRaw.length !== 0) processInputCsvData();
 
-    if (file != null) processFile();
+    if (file !== null) processFile();
   };
 
   // Process results from PapaParse
   function processResult(results) {
-    if (results.errors.length > 0) {
-      setIsCsvError(true);
-      setCsvParseError(results.errors[0].message);
+    if (results.errors?.length !== 0) {
+      setParsingError({ isError: true, message: results.errors[0].message });
+
       setCsvData([]);
       setHeaderNameArray([]);
-      setIsTableOptionsDisabled(true);
-    } else {
-      if (results.data.length === 0) {
-        setCsvParseError("Parsed CSV data is empty.");
-        setIsCsvError(true);
-      } else {
-        setCsvData(results.data);
-        setIsCsvError(false);
-        setHeaderNameArray(results.meta.fields);
-        setIsTableOptionsDisabled(false);
-      }
+
+      return;
     }
+
+    if (!results.data?.length) {
+      setParsingError({ isError: true, message: "Parsed CSV data is empty" });
+      return;
+    }
+
+    setCsvData(results.data);
+    setParsingError({ isError: false, message: "" });
+    setHeaderNameArray(results.meta.fields);
   }
 
   const toCsharp = () => {
@@ -140,60 +145,8 @@ function App() {
     var element = csvData[0];
 
     for (let i = 0; i < Object.keys(element).length; i++) {
-      var type = typeof element[Object.keys(element)[i]];
-
-      if (type === "number") {
-        csharp +=
-          "   public int " + Object.keys(element)[i] + " { get; set; }" + "\n";
-      } else if (type === "string") {
-        csharp +=
-          "   public string " +
-          Object.keys(element)[i] +
-          " { get; set; }" +
-          "\n";
-      } else if (type === "boolean") {
-        csharp +=
-          "   public bool " + Object.keys(element)[i] + " { get; set; }" + "\n";
-      } else if (type === "object") {
-        csharp +=
-          "   public object " +
-          Object.keys(element)[i] +
-          " { get; set; }" +
-          "\n";
-      } else if (type === "undefined") {
-        csharp +=
-          "   public object " +
-          Object.keys(element)[i] +
-          " { get; set; }" +
-          "\n";
-      } else if (type === "bigint") {
-        csharp +=
-          "   public long " + Object.keys(element)[i] + " { get; set; }" + "\n";
-      } else if (type === "symbol") {
-        csharp +=
-          "   public object " +
-          Object.keys(element)[i] +
-          " { get; set; }" +
-          "\n";
-      } else if (type === "function") {
-        csharp +=
-          "   public object " +
-          Object.keys(element)[i] +
-          " { get; set; }" +
-          "\n";
-      } else if (type === "undefined") {
-        csharp +=
-          "   public object " +
-          Object.keys(element)[i] +
-          " { get; set; }" +
-          "\n";
-      } else {
-        csharp +=
-          "   public object " +
-          Object.keys(element)[i] +
-          " { get; set; }" +
-          "\n";
-      }
+      csharp +=
+        "   public string " + Object.keys(element)[i] + " { get; set; }" + "\n";
     }
 
     csharp += "}";
@@ -264,7 +217,7 @@ function App() {
     if (csvRaw.length !== 0) {
       setCsvRaw("");
       setHeaderNameArray([]);
-      setIsCsvError(false);
+      setParsingError({ isError: false, message: "" });
     }
 
     setIsProcessing(true);
@@ -290,7 +243,7 @@ function App() {
 
   // Callback function for input text area
   const inputStringCallback = async (event) => {
-    if (event.length === 0) return;
+    if (event.length === 0 && csvRaw.length === 0) return;
     setFile(null);
     fileUploadRef.clear();
     setCsvRaw(event);
@@ -299,7 +252,7 @@ function App() {
 
   // Callback function for file upload component
   const selectFileCallback = async (event) => {
-    if (event.files.length === 0) return;
+    if (event.files?.length === 0) return;
     if (event.files[0].type !== "text/csv") {
       toast.current.show({
         severity: "error",
@@ -313,7 +266,7 @@ function App() {
       return;
     }
 
-    if (event.files[0].size > 10000000) {
+    if (event.files[0].size > maxFileSize) {
       toast.current.show({
         severity: "error",
         summary: "Error",
@@ -335,9 +288,8 @@ function App() {
     setCsvRaw("");
     setCsvData([]);
     setHeaderNameArray([]);
-    setIsCsvError(false);
-    setIsTableOptionsDisabled(false);
     setIsProcessing(false);
+    setParsingError({ isError: false, message: "" });
     setJsonCodeBlockData({ isCompiled: false, data: "" });
     clearFile();
     setDisableStringInput(false);
@@ -394,11 +346,11 @@ function App() {
         {renderButtons()}
         <br />
         {renderProcessingSpinner()}
-        {renderErrorText()}
+        <ParsingErrorComponent props={parsingError} />
       </div>
       {renderTable()}
       {renderJsonOptions()}
-      {jsonCodeBlockData.isCompiled ? renderJsonCodeBlock() : ""}
+      <JsonCodeBlockComponent props={jsonCodeBlockData} />
       <Divider />
       <ScrollTop />
       <div className="grid">
@@ -477,13 +429,12 @@ function App() {
 
   function renderTableOptions() {
     return (
-      <div class="flex justify-content-center flex-wrap">
-        <div class="flex align-items-center justify-content-center p-3">
+      <div className="flex justify-content-center flex-wrap">
+        <div className="flex align-items-center justify-content-center p-3">
           <Checkbox
             inputId="sortable"
             onChange={(e) => setIsSortable(e.checked)}
             checked={isSortable}
-            disabled={isTableOptionsDisabled}
           />
           <label
             htmlFor="sortable"
@@ -493,12 +444,11 @@ function App() {
             Sortable
           </label>
         </div>
-        <div class="flex align-items-center justify-content-center p-3">
+        <div className="flex align-items-center justify-content-center p-3">
           <Checkbox
             inputId="reordable"
             onChange={(e) => setIsReordable(e.checked)}
             checked={isReordable}
-            disabled={isTableOptionsDisabled}
           />
           <label
             htmlFor="reordable"
@@ -515,13 +465,14 @@ function App() {
 
   // Render table if CSV is valid and has data to display
   function renderTable() {
-    if (isCsvError) return null;
-    if (headerNameArray.length === 0) return null;
-    if (csvData.length === 0) return null;
+    if (
+      parsingError.isError ||
+      headerNameArray.length === 0 ||
+      csvData.length === 0
+    )
+      return null;
 
     const columns = [];
-
-    let isPagination = csvData.length > 30 ? true : false;
 
     for (let i = 0; i < headerNameArray.length; i++) {
       columns.push(
@@ -535,7 +486,7 @@ function App() {
     }
 
     // Render table with pagination if CSV data is large
-    if (isPagination) {
+    if (csvData.length > paginationThreshold) {
       return (
         <div style={{ padding: 20 }}>
           {renderTableOptions()}
@@ -559,60 +510,26 @@ function App() {
           </DataTable>
         </div>
       );
-    } else {
-      return (
-        <div style={{ padding: 20 }}>
-          {renderTableOptions()}
-
-          <DataTable
-            value={csvData}
-            showGridlines
-            scrollable
-            scrollHeight="800px"
-            tableStyle={{ minWidth: "50rem" }}
-            selectionMode="multiple"
-            selection={selectedObjs}
-            onSelectionChange={(e) => setSelectedObjs(e.value)}
-            metaKeySelection={false}
-            reorderableColumns={isReordable}
-            reorderableRows={isReordable}
-          >
-            {columns}
-          </DataTable>
-        </div>
-      );
     }
-  }
-
-  // Render JSON code block if user wants to convert CSV to JSON format
-  function renderJsonCodeBlock() {
     return (
-      <div className="grid">
-        <Divider />
-        <div className="col-10 col-offset-1">
-          <div className="p-1">
-            <CopyBlock
-              text={jsonCodeBlockData.data}
-              language="jsx"
-              theme={dracula}
-              showLineNumbers={true}
-              wrapLongLines={true}
-            />
-          </div>
-        </div>
-      </div>
-    );
-  }
+      <div style={{ padding: 20 }}>
+        {renderTableOptions()}
 
-  // Render error text if CSV is invalid
-  function renderErrorText() {
-    if (!isCsvError) return null;
-    return (
-      <div style={{ marginTop: 20 }}>
-        <div className="text-center text-3xl text-red-500">
-          Error parsing CSV
-        </div>
-        <div className="text-center text-2xl text-red-500">{csvParseError}</div>
+        <DataTable
+          value={csvData}
+          showGridlines
+          scrollable
+          scrollHeight="800px"
+          tableStyle={{ minWidth: "50rem" }}
+          selectionMode="multiple"
+          selection={selectedObjs}
+          onSelectionChange={(e) => setSelectedObjs(e.value)}
+          metaKeySelection={false}
+          reorderableColumns={isReordable}
+          reorderableRows={isReordable}
+        >
+          {columns}
+        </DataTable>
       </div>
     );
   }

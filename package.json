@@ -1,6 +1,6 @@
 {
   "name": "csv-viewer",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/bice4/csvViewer"
@@ -18,8 +18,8 @@
     "xlsx": "^0.18.5"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build"
+    "start": "react-scripts --openssl-legacy-provider start",
+    "build": "react-scripts --openssl-legacy-provider build"
   },
   "eslintConfig": {
     "extends": [
